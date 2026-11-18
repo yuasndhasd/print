@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c1020">
+<title>手机打印</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;display:flex;align-items:center;justify-content:center;
+background:radial-gradient(120% 100% at 50% 0%,#1d2742 0%,#0c1020 62%,#070a14 100%);
+color:#e8edf7;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+padding:22px}
+.card{width:min(88vw,360px);text-align:center;padding:38px 24px 30px;border-radius:22px;
+background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+box-shadow:0 24px 60px -20px rgba(0,0,0,.85)}
+.ring{width:62px;height:62px;margin:0 auto 22px;border-radius:50%;position:relative;
+background:conic-gradient(from 0deg,rgba(96,146,255,0) 0deg,rgba(96,146,255,.95) 300deg,rgba(96,146,255,0) 360deg);
+animation:spin 1.05s linear infinite}
+.ring::after{content:"";position:absolute;inset:6px;border-radius:50%;background:#101528}
+@keyframes spin{to{transform:rotate(360deg)}}
+h1{font-size:17px;letter-spacing:.5px;margin:0 0 9px;font-weight:600}
+p{margin:0;font-size:13px;line-height:1.8;color:#8f9db8;word-break:break-all}
+.err .ring{display:none}
+.err h1{color:#ff9d9d}
+.btn{display:none;margin-top:20px;border:0;border-radius:12px;padding:13px 0;width:100%;
+font-size:14px;font-weight:600;color:#0b1020;background:linear-gradient(135deg,#7fa8ff,#aac7ff);font-family:inherit}
+</style>
+</head>
+<body>
+<div class="card" id="c">
+  <div class="ring" id="r"></div>
+  <h1 id="h">正在连接电脑</h1>
+  <p id="p">马上就好…</p>
+  <button class="btn" id="b">重试</button>
+</div>
+<script>
+(function(){
+  var OWNER="yuasndhasd", REPO="print";
+  var SRC=[
+    "https://api.github.com/repos/"+OWNER+"/"+REPO+"/contents/addr.json",
+    "https://raw.githubusercontent.com/"+OWNER+"/"+REPO+"/main/addr.json"
+  ];
+  var c=document.getElementById("c"),r=document.getElementById("r"),
+      h=document.getElementById("h"),p=document.getElementById("p"),b=document.getElementById("b");
+
+  function fail(msg){ c.className="card err"; h.textContent="连不上电脑";
+    p.innerHTML=msg; b.style.display="block"; }
+  function reset(){ c.className="card"; h.textContent="正在连接电脑";
+    p.textContent="马上就好…"; b.style.display="none"; }
+
+  function parseAddr(j){
+    var s="";
+    if(j && j.content){ s=decodeURIComponent(escape(atob((j.content||"").replace(/\s/g,"")))); }
+    else if(typeof j==="string"){ s=j; }
+    s=(s||"").trim();
+    return /^https:\/\//.test(s) ? s : null;
+  }
+
+  function tryNext(i){
+    if(i>=SRC.length){ fail("电脑上的「本地AI助手」可能没开，<br>或地址还没更新。<br>打开电脑程序后点重试。"); return; }
+    fetch(SRC[i]+"?t="+Date.now(),{cache:"no-store"})
+      .then(function(x){ if(!x.ok) throw 0; return x.text(); })
+      .then(function(t){
+        var j; try{ j=JSON.parse(t); }catch(e){ j=t; }
+        var a=parseAddr(j);
+        if(!a) throw 0;
+        h.textContent="正在打开"; p.textContent=a;
+        location.replace(a);
+      })
+      .catch(function(){ tryNext(i+1); });
+  }
+
+  b.onclick=function(){ reset(); tryNext(0); };
+  reset(); tryNext(0);
+})();
+</script>
+</body>
+</html>
